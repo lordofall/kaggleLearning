@@ -9,7 +9,7 @@ delv_data = pd.read_csv(train_delv_path)
 train_match_path = './input/jio/Trainmatches.csv'
 match_data = pd.read_csv(train_match_path)
 
-columns =["id","team1","team2","winner","venue","toss_winner"]
+columns =["team1","team2","winner","venue","toss_winner"]
 X = match_data[columns]
 t_y = pd.DataFrame(columns=['result'])
 for index,row in X.iterrows():

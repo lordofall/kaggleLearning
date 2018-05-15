@@ -1,0 +1,51 @@
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+train_match_path = './input/jio/Trainmatches.csv'
+match_data = pd.read_csv(train_match_path)
+
+# prepare data
+match_data['team_1_win_flag'] = np.where(match_data.team1 == match_data.winner, 1, 0);
+y = match_data['team_1_win_flag']
+columns_to_drop = ['id','dl_applied','win_by_runs','win_by_wickets','player_of_match','result', 'winner','team_1_win_flag','city','toss_decision']
+X = match_data.drop(columns_to_drop, axis=1);
+
+encode = {'team1': {'Team1':1,'Team2':2,'Team3':3,'Team4':4,'Team5':5,'Team6':6,'Team7':7,'Team8':8,'Team9':9,'Team10':10,'Team11':11},
+          'team2': {'Team1':1,'Team2':2,'Team3':3,'Team4':4,'Team5':5,'Team6':6,'Team7':7,'Team8':8,'Team9':9,'Team10':10,'Team11':11},
+          'toss_winner': {'Team1':1,'Team2':2,'Team3':3,'Team4':4,'Team5':5,'Team6':6,'Team7':7,'Team8':8,'Team9':9,'Team10':10,'Team11':11}}
+X.replace(encode, inplace=True)
+var_mod = ['venue','season'];
+le = LabelEncoder();
+for i in var_mod:
+    X[i] = le.fit_transform(X[i]);
+
+# split data into training and validation
+train_X, val_X, train_y, val_y = train_test_split(X, y,test_size=0.18,random_state = 0)
+
+
+#Define model
+random_forest_model = RandomForestClassifier(n_estimators=10)
+# Fit model
+random_forest_model.fit(train_X, train_y)
+
+yhat2 = random_forest_model.predict(val_X)
+print("absolute error for validation {}".format(mean_absolute_error(val_y, yhat2)))
+
+ytraining_hat2 = random_forest_model.predict(train_X)
+print("absolute error for training {}".format(mean_absolute_error(train_y, ytraining_hat2)))
+
+# test data >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+test_match_path = './input/jio/Testmatches.csv'
+test_match_data = pd.read_csv(test_match_path);
+columns_to_drop = ['match_id','dl_applied','result','city','toss_decision']
+X_test = test_match_data.drop(columns_to_drop, axis=1);
+X_test.replace(encode, inplace=True)
+for i in var_mod:
+    X_test[i] = le.fit_transform(X_test[i]);
+yhat_test = random_forest_model.predict(X_test)
+my_submission = pd.DataFrame({'match_id': test_match_data.match_id, 'team_1_win_flag': yhat_test})
+my_submission.to_csv('random_forest_model_submission.csv', index=False)
